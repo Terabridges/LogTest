@@ -4,14 +4,11 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
-import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
+import org.firstinspires.ftc.teamcode.logging.PsiKitDriverStationLogger;
+import org.firstinspires.ftc.teamcode.logging.PsiKitMotorLogger;
 import org.psilynx.psikit.core.rlog.RLOGServer;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
 import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.LoggableInputs;
-import org.psilynx.psikit.ftc.wrappers.GamepadWrapper;
-
-import org.firstinspires.ftc.teamcode.logging.AdvantageScopeJoystickInputs;
 
 import org.psilynx.psikit.ftc.PsiKitLinearOpMode;
 
@@ -19,35 +16,8 @@ import org.psilynx.psikit.ftc.PsiKitLinearOpMode;
 public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
 
     private DcMotorEx motor;
-    private final AdvantageScopeJoystickInputs joystick0 = new AdvantageScopeJoystickInputs();
-    private final AdvantageScopeJoystickInputs joystick1 = new AdvantageScopeJoystickInputs();
-
-    /**
-     * Returns a {@link LoggableInputs} view of {@code gamepad1} for PsiKit.
-     * <p>
-     * PsiKit's {@code psiKitSetup()} attempts to replace {@code gamepad1/2} with PsiKit wrappers,
-     * but the FTC SDK can still provide a plain {@code Gamepad} instance at runtime (or swap
-     * instances). Casting would then crash.
-     * <p>
-     * This method avoids per-loop allocations by reusing the wrapper when one is already present,
-     * and only wrapping when necessary.
-     */
-    private LoggableInputs loggableGamepad1() {
-        if (gamepad1 instanceof LoggableInputs) {
-            return (LoggableInputs) gamepad1;
-        }
-        return new GamepadWrapper(gamepad1);
-    }
-
-    /**
-     * Same as {@link #loggableGamepad1()}, but for {@code gamepad2}.
-     */
-    private LoggableInputs loggableGamepad2() {
-        if (gamepad2 instanceof LoggableInputs) {
-            return (LoggableInputs) gamepad2;
-        }
-        return new GamepadWrapper(gamepad2);
-    }
+    private final PsiKitDriverStationLogger driverStationLogger = new PsiKitDriverStationLogger();
+    private final PsiKitMotorLogger motorLogger = new PsiKitMotorLogger();
 
     @Override
     public void runOpMode() {
@@ -74,22 +44,11 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
             Logger.periodicBeforeUser();
 
             processHardwareInputs();
-            // PsiKit wraps `gamepad1/2` but does not currently call `Logger.processInputs(...)` for them.
-            // So do it explicitly to get gamepad data into the log.
-            Logger.processInputs("DriverStation/Gamepad1", loggableGamepad1());
-            Logger.processInputs("DriverStation/Gamepad2", loggableGamepad2());
-
-            // Also log a schema that AdvantageScope's "Joysticks" view recognizes (slots 0/1).
-            joystick0.updateFrom(gamepad1);
-            joystick1.updateFrom(gamepad2);
-            // AdvantageScope's Joysticks tab looks for keys starting with "/DriverStation/JoystickN".
-            Logger.processInputs("/DriverStation/Joystick0", joystick0);
-            Logger.processInputs("/DriverStation/Joystick1", joystick1);
+            driverStationLogger.log(gamepad1, gamepad2);
+            motorLogger.logAll(hardwareMap);
             // this MUST come before any logic
 
             telemetry.addData("PsiKit hardwareMap", hardwareMap.getClass().getSimpleName());
-            telemetry.addData("PsiKit gamepad1 wrapped", gamepad1 instanceof LoggableInputs);
-            telemetry.addData("PsiKit gamepad2 wrapped", gamepad2 instanceof LoggableInputs);
             telemetry.update();
 
          /*
@@ -111,13 +70,8 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
             double beforeUserEnd = Logger.getTimestamp();
 
             processHardwareInputs();
-            Logger.processInputs("DriverStation/Gamepad1", loggableGamepad1());
-            Logger.processInputs("DriverStation/Gamepad2", loggableGamepad2());
-
-            joystick0.updateFrom(gamepad1);
-            joystick1.updateFrom(gamepad2);
-            Logger.processInputs("/DriverStation/Joystick0", joystick0);
-            Logger.processInputs("/DriverStation/Joystick1", joystick1);
+            driverStationLogger.log(gamepad1, gamepad2);
+            motorLogger.logAll(hardwareMap);
             // this MUST come before any logic
 
          /*
@@ -127,10 +81,9 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
          */
             double joystickValue = -gamepad1.left_stick_y;  // Up on stick is negative, so invert for positive power forward
             motor.setPower(joystickValue);
-            double motorCurrent = motor.getCurrent(CurrentUnit.AMPS);
+            // Motor current is logged via motorLogger (Motors/motor0/CurrentAmps)
 
             telemetry.addData("Joystick Left Y", gamepad1.left_stick_y);
-            telemetry.addData("Motor Current (Amps)", motorCurrent);
             telemetry.update();
 
             Logger.recordOutput("OpMode/example", 2.0);
