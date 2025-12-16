@@ -1,29 +1,64 @@
 package org.firstinspires.ftc.teamcode.opmodes.tests;
 
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.psilynx.psikit.core.rlog.RLOGServer;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
 import org.psilynx.psikit.core.Logger;
+import org.psilynx.psikit.core.LoggableInputs;
+import org.psilynx.psikit.ftc.wrappers.GamepadWrapper;
 
 import org.psilynx.psikit.ftc.PsiKitLinearOpMode;
 
 @TeleOp(name="ConceptPsiKitLoggerLinear")
 public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
 
-    public Gamepad currentGamepad1;
     private DcMotorEx motor;
+
+    /**
+     * Returns a {@link LoggableInputs} view of {@code gamepad1} for PsiKit.
+     * <p>
+     * PsiKit's {@code psiKitSetup()} attempts to replace {@code gamepad1/2} with PsiKit wrappers,
+     * but the FTC SDK can still provide a plain {@code Gamepad} instance at runtime (or swap
+     * instances). Casting would then crash.
+     * <p>
+     * This method avoids per-loop allocations by reusing the wrapper when one is already present,
+     * and only wrapping when necessary.
+     */
+    private LoggableInputs loggableGamepad1() {
+        if (gamepad1 instanceof LoggableInputs) {
+            return (LoggableInputs) gamepad1;
+        }
+        return new GamepadWrapper(gamepad1);
+    }
+
+    /**
+     * Same as {@link #loggableGamepad1()}, but for {@code gamepad2}.
+     */
+    private LoggableInputs loggableGamepad2() {
+        if (gamepad2 instanceof LoggableInputs) {
+            return (LoggableInputs) gamepad2;
+        }
+        return new GamepadWrapper(gamepad2);
+    }
 
     @Override
     public void runOpMode() {
-        //Robot robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2);
-        currentGamepad1 = new Gamepad();
-        motor = hardwareMap.get(DcMotorEx.class, "motor0");
+        // IMPORTANT: PsiKit wraps `hardwareMap` and `gamepad1/2` in `psiKitSetup()`.
+        // Any `hardwareMap.get(...)` calls MUST happen after setup, otherwise devices won't be wrapped/logged.
         psiKitSetup();
+
+        // Get motor *after* psiKitSetup so PsiKit can wrap/log it.
+        // PsiKit's HardwareMap wrapper currently registers a motor wrapper for `DcMotor` (not `DcMotorEx`).
+        // So we request both:
+        // - `DcMotorEx` for full runtime API (e.g. current)
+        // - `DcMotor` to ensure PsiKit registers the wrapper for automatic logging.
+        motor = hardwareMap.get(DcMotorEx.class, "motor0");
+        hardwareMap.get(DcMotor.class, "motor0");
+
         Logger.addDataReceiver(new RLOGServer());
         String filename = this.getClass().getSimpleName() + "_log_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date()) + ".rlog";
         Logger.addDataReceiver(new RLOGWriter(filename));
@@ -35,7 +70,16 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
             Logger.periodicBeforeUser();
 
             processHardwareInputs();
+            // PsiKit wraps `gamepad1/2` but does not currently call `Logger.processInputs(...)` for them.
+            // So do it explicitly to get gamepad data into the log.
+            Logger.processInputs("DriverStation/Gamepad1", loggableGamepad1());
+            Logger.processInputs("DriverStation/Gamepad2", loggableGamepad2());
             // this MUST come before any logic
+
+            telemetry.addData("PsiKit hardwareMap", hardwareMap.getClass().getSimpleName());
+            telemetry.addData("PsiKit gamepad1 wrapped", gamepad1 instanceof LoggableInputs);
+            telemetry.addData("PsiKit gamepad2 wrapped", gamepad2 instanceof LoggableInputs);
+            telemetry.update();
 
          /*
 
@@ -56,6 +100,8 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
             double beforeUserEnd = Logger.getTimestamp();
 
             processHardwareInputs();
+            Logger.processInputs("DriverStation/Gamepad1", loggableGamepad1());
+            Logger.processInputs("DriverStation/Gamepad2", loggableGamepad2());
             // this MUST come before any logic
 
          /*

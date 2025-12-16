@@ -1,0 +1,22 @@
+{
+  // Use the same JDK as Android Studio by pointing JAVA_HOME at it.
+  // Recommended: set JAVA_HOME to Android Studio's Gradle JDK (often its embedded JBR 17).
+  "java.jdt.ls.java.home": "${env:JAVA_HOME}",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "${env:JAVA_HOME}",
+      "default": true
+    }
+  ],
+
+  // Helps the Gradle for Java extension use the same JDK.
+  "gradle.java.home": "${env:JAVA_HOME}",
+
+  // FTC projects are big; avoid constantly importing everything.
+  "java.import.gradle.enabled": true,
+  "java.import.gradle.offline.enabled": false,
+
+  // Quality of life
+  "java.compile.nullAnalysis.mode": "disabled"
+}
