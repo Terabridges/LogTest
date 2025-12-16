@@ -11,12 +11,16 @@ import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.LoggableInputs;
 import org.psilynx.psikit.ftc.wrappers.GamepadWrapper;
 
+import org.firstinspires.ftc.teamcode.logging.AdvantageScopeJoystickInputs;
+
 import org.psilynx.psikit.ftc.PsiKitLinearOpMode;
 
 @TeleOp(name="ConceptPsiKitLoggerLinear")
 public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
 
     private DcMotorEx motor;
+    private final AdvantageScopeJoystickInputs joystick0 = new AdvantageScopeJoystickInputs();
+    private final AdvantageScopeJoystickInputs joystick1 = new AdvantageScopeJoystickInputs();
 
     /**
      * Returns a {@link LoggableInputs} view of {@code gamepad1} for PsiKit.
@@ -74,6 +78,13 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
             // So do it explicitly to get gamepad data into the log.
             Logger.processInputs("DriverStation/Gamepad1", loggableGamepad1());
             Logger.processInputs("DriverStation/Gamepad2", loggableGamepad2());
+
+            // Also log a schema that AdvantageScope's "Joysticks" view recognizes (slots 0/1).
+            joystick0.updateFrom(gamepad1);
+            joystick1.updateFrom(gamepad2);
+            // AdvantageScope's Joysticks tab looks for keys starting with "/DriverStation/JoystickN".
+            Logger.processInputs("/DriverStation/Joystick0", joystick0);
+            Logger.processInputs("/DriverStation/Joystick1", joystick1);
             // this MUST come before any logic
 
             telemetry.addData("PsiKit hardwareMap", hardwareMap.getClass().getSimpleName());
@@ -102,6 +113,11 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
             processHardwareInputs();
             Logger.processInputs("DriverStation/Gamepad1", loggableGamepad1());
             Logger.processInputs("DriverStation/Gamepad2", loggableGamepad2());
+
+            joystick0.updateFrom(gamepad1);
+            joystick1.updateFrom(gamepad2);
+            Logger.processInputs("/DriverStation/Joystick0", joystick0);
+            Logger.processInputs("/DriverStation/Joystick1", joystick1);
             // this MUST come before any logic
 
          /*
