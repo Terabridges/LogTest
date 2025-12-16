@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.logging.PsiKitDriverStationLogger;
 import org.firstinspires.ftc.teamcode.logging.PsiKitMotorLogger;
+import org.firstinspires.ftc.teamcode.logging.PsiKitPinpointV2Logger;
 import org.psilynx.psikit.core.rlog.RLOGServer;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
 import org.psilynx.psikit.core.Logger;
@@ -18,6 +19,7 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
     private DcMotorEx motor;
     private final PsiKitDriverStationLogger driverStationLogger = new PsiKitDriverStationLogger();
     private final PsiKitMotorLogger motorLogger = new PsiKitMotorLogger();
+    private final PsiKitPinpointV2Logger pinpointLogger = new PsiKitPinpointV2Logger();
 
     @Override
     public void runOpMode() {
@@ -46,6 +48,7 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
             processHardwareInputs();
             driverStationLogger.log(gamepad1, gamepad2);
             motorLogger.logAll(hardwareMap);
+            pinpointLogger.logAll(hardwareMap);
             // this MUST come before any logic
 
             telemetry.addData("PsiKit hardwareMap", hardwareMap.getClass().getSimpleName());
@@ -72,6 +75,7 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
             processHardwareInputs();
             driverStationLogger.log(gamepad1, gamepad2);
             motorLogger.logAll(hardwareMap);
+            pinpointLogger.logAll(hardwareMap);
             // this MUST come before any logic
 
          /*

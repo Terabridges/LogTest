@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opmodes.tests;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.logging.PsiKitDriverStationLogger;
+import org.firstinspires.ftc.teamcode.logging.PsiKitPinpointV2Logger;
 import org.psilynx.psikit.core.rlog.RLOGServer;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
 import org.psilynx.psikit.core.Logger;
@@ -13,6 +14,7 @@ import org.psilynx.psikit.ftc.PsiKitOpMode;
 public class ConceptPsiKitLogger extends PsiKitOpMode {
 
     private final PsiKitDriverStationLogger driverStationLogger = new PsiKitDriverStationLogger();
+    private final PsiKitPinpointV2Logger pinpointLogger = new PsiKitPinpointV2Logger();
 
     @Override
     public void psiKit_init() {
@@ -33,6 +35,7 @@ public class ConceptPsiKitLogger extends PsiKitOpMode {
         Logger.periodicBeforeUser();
         processHardwareInputs();
         driverStationLogger.log(gamepad1, gamepad2);
+        pinpointLogger.logAll(hardwareMap);
 
         // If STOP is pressed before START, force the init loop to exit cleanly.
         if (isStopRequested()) {
@@ -52,6 +55,7 @@ public class ConceptPsiKitLogger extends PsiKitOpMode {
     @Override
     public void psiKit_loop() {
         driverStationLogger.log(gamepad1, gamepad2);
+        pinpointLogger.logAll(hardwareMap);
 
         Logger.recordOutput("Joystick/LeftY", gamepad1.left_stick_y);
 
