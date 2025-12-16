@@ -52,15 +52,32 @@ public final class PsiKitMotorLogger {
     private void cacheMotors(HardwareMap hardwareMap) {
         cachedMotors.clear();
 
+        // Prefer DcMotorEx directly. In some setups, getAll(DcMotor.class) can surface
+        // wrapper/proxy instances that return stubbed values (notably current).
+        List<DcMotorEx> exMotors = new ArrayList<>();
+        try {
+            exMotors = hardwareMap.getAll(DcMotorEx.class);
+        } catch (Throwable ignored) {
+            // Some SDK variants may not support getAll for DcMotorEx; fall back below.
+        }
+
+        if (exMotors != null && !exMotors.isEmpty()) {
+            for (DcMotorEx motorEx : exMotors) {
+                String chosenName = firstNameOrFallback(hardwareMap, motorEx, "motor");
+                cachedMotors.add(new NamedMotor(chosenName, motorEx));
+            }
+            return;
+        }
+
+        // Fallback: enumerate DcMotor and keep those that also implement DcMotorEx.
         // FTC SDK provides getAll(...) for each device class; this yields device instances.
         // We then ask hardwareMap for all names bound to that instance.
         List<DcMotor> motors = hardwareMap.getAll(DcMotor.class);
         for (DcMotor dcMotor : motors) {
-            DcMotorEx motorEx = (dcMotor instanceof DcMotorEx) ? (DcMotorEx) dcMotor : null;
-            if (motorEx == null) {
+            if (!(dcMotor instanceof DcMotorEx)) {
                 continue;
             }
-
+            DcMotorEx motorEx = (DcMotorEx) dcMotor;
             String chosenName = firstNameOrFallback(hardwareMap, dcMotor, "motor");
             cachedMotors.add(new NamedMotor(chosenName, motorEx));
         }
@@ -89,10 +106,25 @@ public final class PsiKitMotorLogger {
 
         // DcMotorEx extras.
         Logger.recordOutput(base + "VelocityTicksPerSec", motor.getVelocity());
-        Logger.recordOutput(base + "CurrentAmps", motor.getCurrent(CurrentUnit.AMPS));
+        Logger.recordOutput(base + "CurrentAmps", readCurrentAmps(motor));
 
         // Represent booleans as 0/1 for maximum viewer compatibility.
         Logger.recordOutput(base + "IsOverCurrent", motor.isOverCurrent() ? 1.0 : 0.0);
+    }
+
+    /**
+     * Best-effort motor current in amps.
+     *
+     * <p>When we cache motors via {@code hardwareMap.getAll(DcMotorEx.class)}, this should be
+     * backed by the SDK's real motor implementation, and current should be available on
+     * Control/Expansion Hubs. If the SDK doesn't support current for a given device, return 0.
+     */
+    private static double readCurrentAmps(DcMotorEx motor) {
+        try {
+            return motor.getCurrent(CurrentUnit.AMPS);
+        } catch (Throwable ignored) {
+            return 0.0;
+        }
     }
 
     private static final class NamedMotor {

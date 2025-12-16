@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmodes.tests;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.logging.PsiKitDriverStationLogger;
@@ -28,12 +27,8 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
         psiKitSetup();
 
         // Get motor *after* psiKitSetup so PsiKit can wrap/log it.
-        // PsiKit's HardwareMap wrapper currently registers a motor wrapper for `DcMotor` (not `DcMotorEx`).
-        // So we request both:
-        // - `DcMotorEx` for full runtime API (e.g. current)
-        // - `DcMotor` to ensure PsiKit registers the wrapper for automatic logging.
+        // We request `DcMotorEx` for full runtime API (e.g. current).
         motor = hardwareMap.get(DcMotorEx.class, "motor0");
-        hardwareMap.get(DcMotor.class, "motor0");
 
         Logger.addDataReceiver(new RLOGServer());
         String filename = this.getClass().getSimpleName() + "_log_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date()) + ".rlog";
