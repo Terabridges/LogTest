@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.opmodes.tests;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.logging.PsiKitDriverStationLogger;
 import org.firstinspires.ftc.teamcode.logging.PsiKitPinpointV2Logger;
 import org.psilynx.psikit.core.rlog.RLOGServer;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
@@ -16,6 +15,11 @@ public class ConceptPsiKitLogger extends PsiKitOpMode {
     // Default OFF: the driver can enable live streaming during INIT using gamepad1.
     private static final boolean DEFAULT_ENABLE_RLOG_SERVER = false;
 
+    // Verification toggle:
+    // - false (default): keep the safe workaround (skip Logger.end once server has ever been registered)
+    // - true: force Logger.end even when server is/was active, to verify the upstream race fix
+    private static final boolean FORCE_END_WITH_RLOG_SERVER = false;
+
     private static RLOGServer sharedRlogServer;
     private static boolean sharedRlogServerRegistered;
 
@@ -23,7 +27,6 @@ public class ConceptPsiKitLogger extends PsiKitOpMode {
     private boolean initMenuConfigured;
     private boolean lastToggle;
 
-    private final PsiKitDriverStationLogger driverStationLogger = new PsiKitDriverStationLogger();
     private final PsiKitPinpointV2Logger pinpointLogger = new PsiKitPinpointV2Logger();
 
     @Override
@@ -70,7 +73,6 @@ public class ConceptPsiKitLogger extends PsiKitOpMode {
         // in init (and appear stuck in stop). We manually run the periodic + input processing here.
         Logger.periodicBeforeUser();
         processHardwareInputs();
-        driverStationLogger.log(gamepad1, gamepad2);
         pinpointLogger.logAll(hardwareMap);
 
         // If STOP is pressed before START, force the init loop to exit cleanly.
@@ -98,7 +100,6 @@ public class ConceptPsiKitLogger extends PsiKitOpMode {
     }
     @Override
     public void psiKit_loop() {
-        driverStationLogger.log(gamepad1, gamepad2);
         pinpointLogger.logAll(hardwareMap);
 
         Logger.recordOutput("Joystick/LeftY", gamepad1.left_stick_y);
@@ -113,10 +114,16 @@ public class ConceptPsiKitLogger extends PsiKitOpMode {
     public void psiKit_stop() {
         // PsiKit 0.1.0-beta2: if RLOGServer is enabled, Logger.end() can crash the RC app.
         // Only end logging when server has NEVER been registered in this RC app process.
-        if (!sharedRlogServerRegistered) {
+        if (!sharedRlogServerRegistered || FORCE_END_WITH_RLOG_SERVER) {
             try {
                 Logger.end();
             } catch (Throwable ignored) {
+            }
+
+            // If we are testing the fixed shutdown path, allow future OpModes to restart the server.
+            if (FORCE_END_WITH_RLOG_SERVER) {
+                sharedRlogServer = null;
+                sharedRlogServerRegistered = false;
             }
         }
     }

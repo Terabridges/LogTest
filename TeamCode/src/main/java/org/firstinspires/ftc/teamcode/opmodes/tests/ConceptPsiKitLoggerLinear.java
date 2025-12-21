@@ -3,8 +3,6 @@ package org.firstinspires.ftc.teamcode.opmodes.tests;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
-import org.firstinspires.ftc.teamcode.logging.PsiKitDriverStationLogger;
-import org.firstinspires.ftc.teamcode.logging.PsiKitMotorLogger;
 import org.firstinspires.ftc.teamcode.logging.PsiKitPinpointV2Logger;
 import org.psilynx.psikit.core.rlog.RLOGServer;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
@@ -19,12 +17,15 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
     // (PsiKit 0.1.0-beta2: attempting to stop RLOGServer on stop can crash the RC app.)
     private static final boolean DEFAULT_ENABLE_RLOG_SERVER = false;
 
+    // Verification toggle:
+    // - false (default): keep the safe workaround (skip Logger.end once server has ever been registered)
+    // - true: force Logger.end even when server is/was active, to verify the upstream race fix
+    private static final boolean FORCE_END_WITH_RLOG_SERVER = false;
+
     private static RLOGServer sharedRlogServer;
     private static boolean sharedRlogServerRegistered;
 
     private DcMotorEx motor;
-    private final PsiKitDriverStationLogger driverStationLogger = new PsiKitDriverStationLogger();
-    private final PsiKitMotorLogger motorLogger = new PsiKitMotorLogger();
     private final PsiKitPinpointV2Logger pinpointLogger = new PsiKitPinpointV2Logger();
 
     @Override
@@ -99,8 +100,6 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
                 double beforeUserEnd = Logger.getTimestamp();
 
                 processHardwareInputs();
-                driverStationLogger.log(gamepad1, gamepad2);
-                motorLogger.logAll(hardwareMap);
                 pinpointLogger.logAll(hardwareMap);
 
                 double joystickValue = -gamepad1.left_stick_y;
@@ -128,10 +127,16 @@ public class ConceptPsiKitLoggerLinear extends PsiKitLinearOpMode {
 
             // PsiKit 0.1.0-beta2: if RLOGServer was enabled, Logger.end() can crash the RC app.
             // So we only end logging if the server has NEVER been registered in this RC app process.
-            if (loggerStarted && !rlogServerActive) {
+            if (loggerStarted && (!rlogServerActive || FORCE_END_WITH_RLOG_SERVER)) {
                 try {
                     Logger.end();
                 } catch (Throwable ignored) {
+                }
+
+                // If we are testing the fixed shutdown path, allow future OpModes to restart the server.
+                if (FORCE_END_WITH_RLOG_SERVER) {
+                    sharedRlogServer = null;
+                    sharedRlogServerRegistered = false;
                 }
             }
         }
