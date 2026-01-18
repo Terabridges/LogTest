@@ -55,6 +55,50 @@ Run:
 
 If you get `JAVA_HOME is not set`, VS Code was started before `JAVA_HOME` was set — restart VS Code.
 
+## 5) Deploy to a Control Hub / Robot Controller over ADB (recommended CLI flow)
+
+This repo is set up so the **app APK** is produced by the `:TeamCode` module (the `:FtcRobotController` module is an Android **library**).
+
+### A) Verify ADB connection
+
+Typical Control Hub endpoint (Wi-Fi ADB):
+
+```powershell
+adb connect 192.168.43.1:5555
+adb devices -l
+```
+
+### B) Build the debug APK
+
+```powershell
+cd <repoRoot>
+./gradlew.bat :TeamCode:assembleDebug --no-daemon
+```
+
+### C) Install the APK
+
+```powershell
+adb install -r .\TeamCode\build\outputs\apk\debug\TeamCode-debug.apk
+```
+
+### D) Restart the Robot Controller app (optional but helps)
+
+```powershell
+adb shell am force-stop com.qualcomm.ftcrobotcontroller
+adb shell am start -n com.qualcomm.ftcrobotcontroller/org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity
+```
+
+### E) Sanity-check that the install actually changed the app
+
+```powershell
+$p = (adb shell pm path com.qualcomm.ftcrobotcontroller).Trim() -replace '^package:'
+adb shell ls -l "$p"
+```
+
+### Common pitfall
+
+- `./gradlew.bat :FtcRobotController:installDebug` installs **only** the `androidTest` APK in this repo layout and will *not* update the running Robot Controller app.
+
 ## Notes
 
 - Android SDK location is already configured in `local.properties` (`sdk.dir=...`).
